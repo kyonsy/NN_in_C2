@@ -8,7 +8,7 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
-                "train_main.c", "nn.c", "train.c", "dataset.c", "util.c", "nrutil.c",
+                "train_main.c", "nn.c", "matrix.c", "dataset.c",
                 "-o",
                 "train.exe"
             ],
@@ -28,7 +28,7 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
-                "infer_main.c", "nn.c", "util.c", "nrutil.c",
+                "infer_main.c", "nn.c", "matrix.c",
                 "-o",
                 "infer.exe"
             ],
@@ -42,33 +42,13 @@
         },
         {
             "type": "cppbuild",
-            "label": "build bench",
-            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "-Wall",
-                "main.c", "test.c", "util.c", "nrutil.c",
-                "-o",
-                "main.exe"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "detail": "matmulの速度測定 main.exe をビルド"
-        },
-        {
-            "type": "cppbuild",
             "label": "build make_data",
             "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
-                "make_data_main.c", "make_teach_data.c",
+                "make_teach_data.c",
                 "-o",
                 "make_data.exe"
             ],
@@ -85,8 +65,7 @@
             "dependsOn": [
                 "build make_data",
                 "build train",
-                "build infer",
-                "build bench"
+                "build infer"
             ],
             "group": {
                 "kind": "build",

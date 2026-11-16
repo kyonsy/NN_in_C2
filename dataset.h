@@ -1,16 +1,14 @@
 #ifndef DATASET_H
 #define DATASET_H
 
+#include "config.h"
+
+// 教師データ N_T 個をまとめたもの(1行 = 1サンプル)
 typedef struct {
-    int N;        // サンプル数
-    int din;      // 入力の次元
-    int dout;     // 出力(教師データ)の次元
-    double **X;   // 入力 X[1..N][1..din]
-    double **T;   // 教師データ T[1..N][1..dout]
+    double X[N_T][D_IN];   // 入力
+    double T[N_T][D_OUT];  // 正解(教師データ)
 } Dataset;
 
-void dataset_init(Dataset *ds,int N,int din,int dout);
-void dataset_free(Dataset *ds);
-int dataset_load(Dataset *ds,const char *path,int N,int din,int dout);
+int dataset_load(Dataset *ds,const char *path);
 
 #endif
