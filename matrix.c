@@ -1,7 +1,7 @@
 #include "matrix.h"
 
 
-void mat_mul_AB(int n,int m,int p,double A[][DMAX],double B[][DMAX],double C[][DMAX])
+void mat_mul_AB(int n,int m,int p,double A[n][m],double B[m][p],double C[n][p])
 // C(n,p) = A(n,m) @ B(m,p)
 // c_ij = Σ_k a_ik * b_kj
 {
@@ -14,7 +14,7 @@ void mat_mul_AB(int n,int m,int p,double A[][DMAX],double B[][DMAX],double C[][D
     }
 }
 
-void mat_mul_ABt(int n,int m,int p,double A[][DMAX],double B[][DMAX],double C[][DMAX])
+void mat_mul_ABt(int n,int m,int p,double A[n][m],double B[p][m],double C[n][p])
 // C(n,p) = A(n,m) @ B(p,m)^T
 // c_ij = Σ_k a_ik * b_jk
 {
@@ -26,7 +26,7 @@ void mat_mul_ABt(int n,int m,int p,double A[][DMAX],double B[][DMAX],double C[][
         }
 }
 
-void mat_mul_AtB(int n,int m,int p,double A[][DMAX],double B[][DMAX],double C[][DMAX])
+void mat_mul_AtB(int n,int m,int p,double A[m][n],double B[m][p],double C[n][p])
 // C(n,p) = A(m,n)^T @ B(m,p)
 // c_ij = Σ_k a_ki * b_kj
 {

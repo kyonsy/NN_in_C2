@@ -3,30 +3,36 @@
 
 #include "config.h"
 
-// 各層の次元。D[0]は入力層、D[N_LAYERS]は出力層
-//   D = { D_IN, N_WIDTH, N_WIDTH, ..., N_WIDTH, D_OUT }
-extern const int D[N_LAYERS+1];
-
 // ニューラルネットワーク
 //
-// 層の番号 k は 1..N_LAYERS を使う(k=0 は入力層なので、重みは持たない)。
+//   入力 X ──W_in──→ H[0] ──W_hid[0]──→ H[1] ── … ──→ H[N_HIDDEN-1] ──W_out──→ 出力 Y
+//  (n×D_IN)        (n×N_WIDTH)        (n×N_WIDTH)      (n×N_WIDTH)          (n×D_OUT)
+//
+// 隠れ層の幅はすべて N_WIDTH なので、隠れ層どうしをつなぐ重みはすべて N_WIDTH×N_WIDTH。
 // サンプルは n 個(n <= N_T)をまとめて行列として扱う。1行 = 1サンプル。
 //
-//   第k層の計算:  H[k] = tanh( H[k-1] @ W[k]^T + b[k] )   (最後の層だけ tanh なし)
-//                 (n×D[k])    (n×D[k-1]) (D[k-1]×D[k])
+//   隠れ層:  H[l] = tanh( H[l-1] @ W^T + b )
+//   出力層:  Y    =       H[N_HIDDEN-1] @ W_out^T + b_out    (tanh なし)
 //
-// 配列はすべて DMAX の大きさで確保してあり、実際に使うのは D[k] までの部分。
 // 大きい(数百KB)ので、ローカル変数ではなく static 変数として置くこと。
+
+// 重みとバイアス一式(勾配も同じ形なので、この型を2つ使う)
 typedef struct {
-    // パラメータ
-    double W[N_LAYERS+1][DMAX][DMAX];   // 重み       W[k] : D[k] × D[k-1]
-    double b[N_LAYERS+1][DMAX];         // バイアス   b[k] : D[k]
-    // 勾配(損失関数 L の W, b に対する勾配)
-    double dW[N_LAYERS+1][DMAX][DMAX];  // ∂L/∂W[k]  : D[k] × D[k-1]
-    double db[N_LAYERS+1][DMAX];        // ∂L/∂b[k]  : D[k]
-    // 途中結果
-    double H[N_LAYERS+1][N_T][DMAX];    // 第k層の出力 H[k] : n × D[k]  (H[0]は入力そのもの)
-    double G[N_LAYERS+1][N_T][DMAX];    // 第k層の tanh をかける前の値に対する L の勾配 : n × D[k]
+    double W_in[N_WIDTH][D_IN];                  // 入力層 → 隠れ層0
+    double b_in[N_WIDTH];
+    double W_hid[N_HIDDEN-1][N_WIDTH][N_WIDTH];  // W_hid[l] : 隠れ層l → 隠れ層l+1
+    double b_hid[N_HIDDEN-1][N_WIDTH];
+    double W_out[D_OUT][N_WIDTH];                // 最後の隠れ層 → 出力層
+    double b_out[D_OUT];
+} Params;
+
+typedef struct {
+    Params p;     // パラメータ
+    Params grad;  // 損失関数 L のパラメータに対する勾配(p と同じ形)
+    // 途中結果(逆伝播で使うので順伝播のときに取っておく)
+    double X[N_T][D_IN];               // 入力
+    double H[N_HIDDEN][N_T][N_WIDTH];  // 隠れ層lの出力 H[l] : n × N_WIDTH
+    double G[N_HIDDEN][N_T][N_WIDTH];  // 隠れ層lの tanh をかける前の値に対する L の勾配
 } NN;
 
 void nn_init(NN *net);

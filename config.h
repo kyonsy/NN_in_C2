@@ -6,14 +6,12 @@
 // (配列の大きさはすべてここの値でコンパイル時に決まる)
 
 // ---- ネットワークの構造 ----
-#define N_LAYERS 17   // 層の数(入力層は含めない)
-#define N_WIDTH  16   // 中間層1層あたりのノードの数
+//   入力層(D_IN) → 隠れ層(N_WIDTH) × N_HIDDEN 個 → 出力層(D_OUT)
+// 隠れ層の幅はすべて同じ N_WIDTH にする
+#define N_HIDDEN 16   // 隠れ層の数(2以上)
+#define N_WIDTH  16   // 隠れ層1層あたりのノードの数
 #define D_IN     1    // 入力の次元
 #define D_OUT    1    // 出力の次元
-
-// 層の次元の最大値。重みなどの配列は、すべての層をこの大きさで確保する
-#define MAX2(a,b) ((a)>(b) ? (a) : (b))
-#define DMAX MAX2(N_WIDTH,MAX2(D_IN,D_OUT))
 
 // ---- 教師データ ----
 #define N_T     41    // 教師データの数(サンプル数)
