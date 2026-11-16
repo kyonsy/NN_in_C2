@@ -1,0 +1,99 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "build train",
+            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-Wall",
+                "train_main.c", "nn.c", "train.c", "dataset.c", "util.c", "nrutil.c",
+                "-o",
+                "train.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "学習用 train.exe をビルド"
+        },
+        {
+            "type": "cppbuild",
+            "label": "build infer",
+            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-Wall",
+                "infer_main.c", "nn.c", "util.c", "nrutil.c",
+                "-o",
+                "infer.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "推論用 infer.exe をビルド"
+        },
+        {
+            "type": "cppbuild",
+            "label": "build bench",
+            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-Wall",
+                "main.c", "test.c", "util.c", "nrutil.c",
+                "-o",
+                "main.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "matmulの速度測定 main.exe をビルド"
+        },
+        {
+            "type": "cppbuild",
+            "label": "build make_data",
+            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-Wall",
+                "make_data_main.c", "make_teach_data.c",
+                "-o",
+                "make_data.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "教師データ作成用 make_data.exe をビルド"
+        },
+        {
+            "label": "build all",
+            "dependsOn": [
+                "build make_data",
+                "build train",
+                "build infer",
+                "build bench"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ],
+    "version": "2.0.0"
+}
