@@ -8,6 +8,8 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
+                "-std=c23",
+                "-pedantic",
                 "train_main.c", "nn.c", "matrix.c", "dataset.c",
                 "-o",
                 "train.exe"
@@ -28,7 +30,9 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
-                "infer_main.c", "nn.c", "matrix.c",
+                "-std=c23",
+                "-pedantic",
+                "infer_main.c", "nn.c", "matrix.c", "dataset.c",
                 "-o",
                 "infer.exe"
             ],
@@ -42,12 +46,36 @@
         },
         {
             "type": "cppbuild",
+            "label": "build initial_random",
+            "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-Wall",
+                "-std=c23",
+                "-pedantic",
+                "initial_random.c", "nn.c", "matrix.c",
+                "-o",
+                "initial_random.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "初期重み作成用 initial_random.exe をビルド"
+        },
+        {
+            "type": "cppbuild",
             "label": "build make_data",
             "command": "C:\\Program Files (x86)\\mingw64\\bin\\gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "-Wall",
+                "-std=c23",
+                "-pedantic",
                 "make_teach_data.c",
                 "-o",
                 "make_data.exe"
@@ -64,6 +92,7 @@
             "label": "build all",
             "dependsOn": [
                 "build make_data",
+                "build initial_random",
                 "build train",
                 "build infer"
             ],

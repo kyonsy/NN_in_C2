@@ -9,6 +9,6 @@ typedef struct {
     double T[N_T][D_OUT];  // 正解(教師データ)
 } Dataset;
 
-int dataset_load(Dataset *ds,const char *path);
+void dataset_load(Dataset *ds,const char *path);
 
 #endif

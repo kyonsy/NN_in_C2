@@ -1,0 +1,7 @@
+{
+    // .h ファイルを C++ ではなく C として扱う
+    "files.associations": {
+        "*.h": "c"
+    },
+    "explorer.sortOrder": "type"
+}

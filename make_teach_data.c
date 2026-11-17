@@ -1,35 +1,31 @@
 // 教師データ作成用の実行ファイル
-// 使い方: make_data.exe 出力先.csv
-//   config.h の T_START から T_END まで N_T 個の点で t=cos(πx) を計算し、
-//   1行に x,t を並べたファイル(dataset_load で読める形式)に書き出す
+// 使い方: make_teach_data.exe > 教師データ.csv
+//   config.h の T_START から T_END まで N_T 個の点で t=f(x) を計算し、
+//   1行に x,t を並べた形(dataset_load で読める形式)で標準出力に書き出す
 #include <stdio.h>
 #include <math.h>
 #include "config.h"
 
-#define PI 3.14159265358979323846
+#define ZETA  0.5  // 減衰比 ζ (0 < ζ < 1 で振動する)
+#define OMEGA 1.0  // 固有角周波数 ω
 
 
-int main(int argc,char **argv)
+static double f(double x)
+// 学習させる関数: 減衰振動
+//   y'' + 2ζω y' + ω² y = 0,  y(0)=1, y'(0)=0  の解
+//   y(x) = exp(-ζωx) * ( cos(ωd x) + ζ/sqrt(1-ζ²) * sin(ωd x) )
+//   ωd = ω sqrt(1-ζ²)  (減衰があるときの実際の角周波数)
 {
-    if(argc!=2){
-        fprintf(stderr,"使い方: %s 出力先.csv\n",argv[0]);
-        return 1;
-    }
-    const char *path=argv[1];
+    double wd=OMEGA*sqrt(1.0-ZETA*ZETA);
+    return exp(-ZETA*OMEGA*x)*(cos(wd*x)+ZETA/sqrt(1.0-ZETA*ZETA)*sin(wd*x));
+}
 
-    FILE *fp=fopen(path,"w");
-    if(fp==NULL){
-        fprintf(stderr,"ファイルを開けません: %s\n",path);
-        return 1;
-    }
-
+int main(void)
+{
     for(int i=0;i<N_T;i++){
         // x+=KIZAMI と足していくと誤差が溜まるので、毎回 i から計算する
         double x=T_START+i*KIZAMI;
-        double t=cos(PI*x);
-        fprintf(fp,"%.15f,%.15f\n",x,t);
+        printf("%.17g,%.17g\n",x,f(x));
     }
-
-    fclose(fp);
     return 0;
 }

@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "MinGW gcc (C23)",
+            "compilerPath": "C:/Program Files (x86)/mingw64/bin/gcc.exe",
+            "compilerArgs": ["-std=c23", "-pedantic"],
+            "cStandard": "c23",
+            "intelliSenseMode": "windows-gcc-x64",
+            "includePath": ["${workspaceFolder}"]
+        }
+    ],
+    "version": 4
+}

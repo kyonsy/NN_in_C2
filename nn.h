@@ -39,7 +39,7 @@ void nn_init(NN *net);
 void nn_forward(NN *net,int n,double X[][D_IN],double Y[][D_OUT]);
 void nn_backward(NN *net,int n,double dY[][D_OUT]);
 void nn_step(NN *net,double lr);
-int  nn_save(const NN *net,const char *path);
-int  nn_load(NN *net,const char *path);
+void nn_print(const NN *net);
+void nn_load(NN *net,const char *path);
 
 #endif

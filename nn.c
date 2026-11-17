@@ -4,9 +4,6 @@
 #include <math.h>
 #include "matrix.h"
 
-// 隠れ層どうしをつなぐ重み W_hid が最低1つ要るので、隠れ層は2つ以上
-_Static_assert(N_HIDDEN>=2,"N_HIDDEN は2以上にしてください");
-
 
 // ============================================================
 //  1つの層の計算
@@ -64,7 +61,7 @@ static void layer_backward(int n,int din,int dout,
 // を受け取り、次を計算する
 //   dW, db : L の W, b に対する勾配
 //   Gin    : L の「1つ前の層の tanh をかける前の値」に対する勾配 (n×din)
-//            (1つ前が入力層のときは不要なので、NULL を渡す)
+//            (1つ前が入力層のときは計算しなくてよいので、NULL を渡す)
 {
     // dW = Gout^T @ Hin       (dout×n) @ (n×din)
     mat_mul_AtB(dout,n,din,Gout,Hin,dW);
@@ -97,26 +94,26 @@ static void layer_step(int dout,int din,double W[dout][din],double b[dout],
     }
 }
 
-static void layer_fprint(FILE *fp,int dout,int din,const double W[dout][din],const double b[dout])
-// W を dout 行、b を 1 行で書き出す
+static void layer_print(int dout,int din,const double W[dout][din],const double b[dout])
+// W を dout 行、b を 1 行で、カンマ区切りで標準出力に書き出す
 // %.17g は double を読み戻したときに元の値と完全に一致する桁数
 {
     for(int i=0;i<dout;i++)
         for(int j=0;j<din;j++)
-            fprintf(fp,"%.17g%c",W[i][j],j<din-1 ? ' ' : '\n');
+            printf("%.17g%c",W[i][j],j<din-1 ? ',' : '\n');
     for(int i=0;i<dout;i++)
-        fprintf(fp,"%.17g%c",b[i],i<dout-1 ? ' ' : '\n');
+        printf("%.17g%c",b[i],i<dout-1 ? ',' : '\n');
 }
 
-static int layer_fscan(FILE *fp,int dout,int din,double W[dout][din],double b[dout])
-// layer_fprint で書いたものを読み込む。成功したら0、失敗したら-1を返す
+static void layer_fscan(FILE *fp,int dout,int din,double W[dout][din],double b[dout])
+// layer_print で書いたものを読み込む
+// "%lf," : 数値を読んで、後ろにカンマがあれば読み飛ばす(行末の改行は次の %lf が読み飛ばす)
 {
     for(int i=0;i<dout;i++)
         for(int j=0;j<din;j++)
-            if(fscanf(fp,"%lf",&W[i][j])!=1) return -1;
+            fscanf(fp,"%lf,",&W[i][j]);
     for(int i=0;i<dout;i++)
-        if(fscanf(fp,"%lf",&b[i])!=1) return -1;
-    return 0;
+        fscanf(fp,"%lf,",&b[i]);
 }
 
 
@@ -190,56 +187,30 @@ void nn_step(NN *net,double lr)
     layer_step(D_OUT,N_WIDTH,p->W_out,p->b_out,g->W_out,g->b_out,lr);
 }
 
-int nn_save(const NN *net,const char *path)
-// 重みとバイアスをテキストファイルに書き出す。成功したら0、失敗したら-1を返す
-// ファイルの形式:
-//   1行目  : N_HIDDEN N_WIDTH D_IN D_OUT
-//   その後 : 入力層側から順に、各層の W(複数行) と b(1行)
+void nn_print(const NN *net)
+// 重みとバイアスを CSV 形式で標準出力に書き出す
+// 形式: 入力層側から順に、各層の W(複数行) と b(1行)。値はカンマ区切り
 {
     const Params *p=&net->p;
 
-    FILE *fp=fopen(path,"w");
-    if(fp==NULL) return -1;
-
-    fprintf(fp,"%d %d %d %d\n",N_HIDDEN,N_WIDTH,D_IN,D_OUT);
-    layer_fprint(fp,N_WIDTH,D_IN,p->W_in,p->b_in);
+    layer_print(N_WIDTH,D_IN,p->W_in,p->b_in);
     for(int l=0;l<N_HIDDEN-1;l++)
-        layer_fprint(fp,N_WIDTH,N_WIDTH,p->W_hid[l],p->b_hid[l]);
-    layer_fprint(fp,D_OUT,N_WIDTH,p->W_out,p->b_out);
-
-    fclose(fp);
-    return 0;
+        layer_print(N_WIDTH,N_WIDTH,p->W_hid[l],p->b_hid[l]);
+    layer_print(D_OUT,N_WIDTH,p->W_out,p->b_out);
 }
 
-int nn_load(NN *net,const char *path)
-// nn_save で書き出したファイルから重みとバイアスを読み込む
-// ファイルのネットワークの形が config.h と一致している必要がある
-// 成功したら0、失敗したら-1を返す
+void nn_load(NN *net,const char *path)
+// nn_print で書き出したファイルから重みとバイアスを読み込む
+// (保存したときと config.h のネットワークの形が同じであること)
 {
     Params *p=&net->p;
 
     FILE *fp=fopen(path,"r");
-    if(fp==NULL) return -1;
 
-    // ネットワークの形が一致しているか確認する
-    int hidden,width,din,dout;
-    if(fscanf(fp,"%d %d %d %d",&hidden,&width,&din,&dout)!=4
-       || hidden!=N_HIDDEN || width!=N_WIDTH || din!=D_IN || dout!=D_OUT){
-        fprintf(stderr,"nn_load: ネットワークの形が config.h と一致しません\n");
-        fclose(fp);
-        return -1;
-    }
-
-    int ok=(layer_fscan(fp,N_WIDTH,D_IN,p->W_in,p->b_in)==0);
-    for(int l=0;l<N_HIDDEN-1 && ok;l++)
-        ok=(layer_fscan(fp,N_WIDTH,N_WIDTH,p->W_hid[l],p->b_hid[l])==0);
-    if(ok)
-        ok=(layer_fscan(fp,D_OUT,N_WIDTH,p->W_out,p->b_out)==0);
+    layer_fscan(fp,N_WIDTH,D_IN,p->W_in,p->b_in);
+    for(int l=0;l<N_HIDDEN-1;l++)
+        layer_fscan(fp,N_WIDTH,N_WIDTH,p->W_hid[l],p->b_hid[l]);
+    layer_fscan(fp,D_OUT,N_WIDTH,p->W_out,p->b_out);
 
     fclose(fp);
-    if(!ok){
-        fprintf(stderr,"nn_load: 重みの読み込みに失敗しました\n");
-        return -1;
-    }
-    return 0;
 }

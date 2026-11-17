@@ -1,8 +1,10 @@
 // 学習用の実行ファイル
-// 使い方: train.exe 学習データ.csv 重みの保存先
+// 使い方: train_main.exe 学習データ.csv 初期重み.csv > 学習後の重み.csv
 //   学習データ.csv : 1行に x_1,...,x_D_IN,t_1,...,t_D_OUT が並んだファイル(N_T行)
+//   初期重み.csv   : initial_random.exe で作った重み(前に学習した重みを渡せば続きから学習する)
+//   学習後の重みは標準出力に、途中経過(損失)は標準エラー出力に書き出す
+//   (途中経過を標準エラー出力にするのは、> でファイルに流しても画面に表示されるようにするため)
 #include <stdio.h>
-#include <stdlib.h>
 #include "config.h"
 #include "nn.h"
 #include "dataset.h"
@@ -37,33 +39,20 @@ void train(NN *net,Dataset *ds,int epochs,double lr)
         nn_backward(net,N_T,dY);                  // 逆伝播
         nn_step(net,lr);                          // 更新
 
-        if(ep%100==0) printf("epoch %d loss %e\n",ep,L);
+        if(ep%100==0) fprintf(stderr,"epoch %d loss %e\n",ep,L);
     }
 }
 
 int main(int argc,char **argv)
 {
-    if(argc!=3){
-        fprintf(stderr,"使い方: %s 学習データ.csv 重みの保存先\n",argv[0]);
-        return 1;
-    }
     const char *data_path=argv[1];
-    const char *weights_path=argv[2];
+    const char *init_path=argv[2];
 
-    if(dataset_load(&ds,data_path)!=0){
-        fprintf(stderr,"学習データの読み込みに失敗しました: %s\n",data_path);
-        return 1;
-    }
-
-    srand(SEED);
-    nn_init(&net);
+    dataset_load(&ds,data_path);
+    nn_load(&net,init_path);
 
     train(&net,&ds,EPOCHS,LR);
 
-    if(nn_save(&net,weights_path)!=0){
-        fprintf(stderr,"重みの保存に失敗しました: %s\n",weights_path);
-        return 1;
-    }
-    printf("重みを保存しました: %s\n",weights_path);
+    nn_print(&net);
     return 0;
 }
