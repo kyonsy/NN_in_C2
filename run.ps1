@@ -22,3 +22,6 @@ $PSDefaultParameterValues['Out-File:Encoding'] = 'ascii'
 
 # ---- 4. 推論する (教師データの x を入力にする。出力は1行 = y) ----
 .\infer_main.exe trained_weight.csv teach_data.csv > infer_output.csv
+
+# ---- 5. グラフを描く
+.\plot.ps1

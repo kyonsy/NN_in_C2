@@ -39,7 +39,7 @@ void train(NN *net,Dataset *ds,int epochs,double lr)
         nn_backward(net,N_T,dY);                  // 逆伝播
         nn_step(net,lr);                          // 更新
 
-        if(ep%100==0) fprintf(stderr,"epoch %d loss %e\n",ep,L);
+        if(ep%N_DISPLAY==0) fprintf(stderr,"epoch %d loss %e\n",ep,L);
     }
 }
 

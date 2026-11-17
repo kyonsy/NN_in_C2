@@ -2,7 +2,8 @@
 // 使い方: infer_main.exe 重み.csv 教師データ.csv > 出力.csv
 //   教師データ.csv : 学習と同じ形式(1行に x_1,...,x_D_IN,t_1,...,t_D_OUT、N_T行)
 //                    推論には x の列だけを使い、t の列は読むだけで使わない
-//   N_T 個の入力をまとめて推論し、出力 y_1,...,y_D_OUT を1行ずつ標準出力に書き出す
+//   N_T 個の入力をまとめて推論し、1行に x_1,...,x_D_IN,y_1,...,y_D_OUT を並べて標準出力に書き出す
+//   (教師データと同じ形なので、グラフを描くときに x を横軸にそのまま使える)
 #include <stdio.h>
 #include "config.h"
 #include "nn.h"
@@ -24,9 +25,12 @@ int main(int argc,char **argv)
 
     nn_forward(&net,N_T,ds.X,Y);
 
-    for(int s=0;s<N_T;s++)
+    for(int s=0;s<N_T;s++){
+        for(int j=0;j<D_IN;j++)
+            printf("%.17g,",ds.X[s][j]);
         for(int j=0;j<D_OUT;j++)
             printf("%.17g%c",Y[s][j],j<D_OUT-1 ? ',' : '\n');
+    }
 
     return 0;
 }
