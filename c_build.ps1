@@ -1,4 +1,5 @@
-﻿# 全プログラムをビルドする
+﻿#Requires -Version 7
+# C 版の全プログラムをビルドする
 #   使い方: .\c_build.ps1                         (config.h の既定値でビルド)
 #           .\c_build.ps1 N_WIDTH=32 N_HIDDEN=4   (config.h の値を上書きしてビルド)
 #
