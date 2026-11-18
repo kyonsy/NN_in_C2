@@ -1,6 +1,6 @@
 ﻿#Requires -Version 7
 # C 版と Python 版の学習時間を、深さ(隠れ層の数)を変えながら比べる
-#   幅 16、教師データ 1000 個、エポック数 2000 に固定し、
+#   幅 16、教師データ 1000 個、エポック数 10000 に固定し、
 #   N_HIDDEN を $depth_list の値に変えながら、C 版と Python 版で同じ学習をして時間を測る
 #   使い方: .\speed_compare_depth.ps1 > speed_compare_depth.csv
 #
@@ -14,10 +14,10 @@
 $fixed = @(
     "N_WIDTH=16"    # 隠れ層1層あたりのノードの数
     "N_T=1000"      # 教師データの数
-    "EPOCHS=2000"   # 学習の反復回数
+    "EPOCHS=10000"   # 学習の反復回数
 )
 
-$depth_list = @(2, 4, 8, 16, 32)   # 試す深さ(2以上)
+$depth_list = @(2, 4, 8, 16,24,32,40,48,56,64)   # 試す深さ(2以上)
 
 # 何回も使うファイル名
 $teach_data  = "teach_data.csv"       # 教師データ
