@@ -1,6 +1,6 @@
 ﻿# 全プログラムをビルドする
-#   使い方: .\build.ps1                         (config.h の既定値でビルド)
-#           .\build.ps1 N_WIDTH=32 N_HIDDEN=4   (config.h の値を上書きしてビルド)
+#   使い方: .\c_build.ps1                         (config.h の既定値でビルド)
+#           .\c_build.ps1 N_WIDTH=32 N_HIDDEN=4   (config.h の値を上書きしてビルド)
 #
 # 引数の「名前=値」は、それぞれ gcc の -D名前=値 として渡す。
 # (-DLR=0.01 と直接書くと PowerShell が小数点で分けてしまうので、-D はここで付ける)

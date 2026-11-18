@@ -1,7 +1,7 @@
 ﻿# エポック数を変えながら学習時間を測る
 #   幅 16、深さ 16、教師データ 1000 個に固定し、
 #   EPOCHS を 1000 から 2 倍ずつ増やして、学習時間が 60 秒以上になったら止める
-#   使い方: .\epoch_time.ps1
+#   使い方: .\c_epoch_time.ps1
 
 $fixed = @(
     "N_WIDTH=16"    # 隠れ層1層あたりのノードの数
@@ -15,14 +15,14 @@ $results = @()      # 結果(エポック数と学習時間)をためておく
 
 while ($true) {
     # この設定でビルドする(EPOCHS は -D で渡すので、変えるたびにビルドし直す)
-    .\build.ps1 @fixed "EPOCHS=$epochs"
+    .\c_build.ps1 @fixed "EPOCHS=$epochs"
 
     # 教師データと初期の重みを作る
-    .\make_teach_data.ps1
-    .\initial_random.ps1
+    .\c_make_teach_data.ps1
+    .\c_initial_random.ps1
 
     # 学習して時間を測る
-    $time = Measure-Command { .\train_main.ps1 }
+    $time = Measure-Command { .\c_train_main.ps1 }
     $sec  = $time.TotalSeconds
     Write-Host ("EPOCHS={0}  学習時間: {1:F2} 秒" -f $epochs, $sec)
 
