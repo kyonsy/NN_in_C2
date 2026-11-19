@@ -60,6 +60,9 @@ override_config()
 # PyTorch の既定は float(単精度)なので、C 版と同じ double(倍精度)に変えておく
 torch.set_default_dtype(torch.float64)
 
+# テンソルを置く場所を CPU にする(C 版と同じく CPU で計算する)
+torch.set_default_device("cpu")
+
 
 class NN(torch.nn.Module):
     # torch.nn.Linear(din, dout) は、重み W(dout×din) とバイアス b(dout) を持つ層で、
