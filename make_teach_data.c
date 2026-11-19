@@ -6,18 +6,15 @@
 #include <math.h>
 #include "config.h"
 
-#define ZETA  0.5  // 減衰比 ζ (0 < ζ < 1 で振動する)
-#define OMEGA 1.0  // 固有角周波数 ω
-
 
 static double f(double x)
 // 学習させる関数: 減衰振動
-//   y'' + 2ζω y' + ω² y = 0,  y(0)=1, y'(0)=0  の解
-//   y(x) = exp(-ζωx) * ( cos(ωd x) + ζ/sqrt(1-ζ²) * sin(ωd x) )
-//   ωd = ω sqrt(1-ζ²)  (減衰があるときの実際の角周波数)
+//   y'' + 2ζ y' + y = 0,  y(0)=1, y'(0)=0  の解 (ZETA は config.h、固有角周波数 ω は 1)
+//   y(x) = exp(-ζx) * ( cos(ωd x) + ζ/ωd * sin(ωd x) )
+//   ωd = sqrt(1-ζ²)  (減衰があるときの実際の角周波数)
 {
-    double wd=OMEGA*sqrt(1.0-ZETA*ZETA);
-    return exp(-ZETA*OMEGA*x)*(cos(wd*x)+ZETA/sqrt(1.0-ZETA*ZETA)*sin(wd*x));
+    double wd=sqrt(1.0-ZETA*ZETA);
+    return exp(-ZETA*x)*(cos(wd*x)+ZETA/wd*sin(wd*x));
 }
 
 int main(void)

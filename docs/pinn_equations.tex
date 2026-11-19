@@ -1,0 +1,211 @@
+% C による PINN の計算式
+% コンパイル: lualatex pinn_equations.tex  (Overleaf ではコンパイラを LuaLaTeX にする)
+\documentclass[a4paper,11pt]{ltjsarticle}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[margin=20mm]{geometry}
+
+\newcommand{\Wout}{W^{\mathrm{out}}}
+\newcommand{\bout}{b^{\mathrm{out}}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{C による PINN の計算式}
+\date{}
+
+\begin{document}
+\maketitle
+
+減衰振動の微分方程式を，教師データを使わずに解く．
+入力 $x$ による微分は計算グラフを使わず，連鎖律で層ごとに直接計算する．
+
+%==================================================
+\section{記号}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+記号 & 意味 & \code{config.h} \\
+\midrule
+$\dot{(\;)},\ \ddot{(\;)}$ & 入力 $x$ による1階微分・2階微分（$\dot y = dy/dx,\ \ddot y = d^2y/dx^2$） & \\
+$\odot$ & 要素ごとの積（$\dot z^2$ なども要素ごとの2乗） & \\
+$K$ & 隠れ層の数 & \code{N\_HIDDEN} \\
+$n$ & 選点（残差を計算する点）の数 & \code{N\_T} \\
+$\zeta$ & 減衰比 & \code{ZETA} \\
+$\lambda$ & 初期条件の項にかける重み & \code{LAMBDA\_IC} \\
+$\eta$ & 学習率 & \code{LR} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%==================================================
+\section{解く問題}
+
+\begin{equation}
+  \ddot y + 2\zeta\,\dot y + y = 0,\qquad
+  y(0)=1,\qquad \dot y(0)=0
+\end{equation}
+固有角周波数は $1$ に固定している（一般の $\ddot y+2\zeta\omega\,\dot y+\omega^2y=0$ で $\omega=1$ としたもの）．
+初期条件も $y(0)=1,\ \dot y(0)=0$ に固定している．
+
+厳密解（$0<\zeta<1$ のとき．結果との比較にだけ使う）：
+\begin{equation}
+  y_{\mathrm{exact}}(x)=e^{-\zeta x}\left(\cos\omega_d x+\frac{\zeta}{\omega_d}\sin\omega_d x\right),
+  \qquad \omega_d=\sqrt{1-\zeta^2}
+\end{equation}
+
+%==================================================
+\section{順伝播（\code{nn\_forward\_d2}）}
+
+\subsection{値}
+\begin{align}
+  a^{(0)} &= x, \\
+  z^{(k)} &= W^{(k)}a^{(k-1)}+b^{(k)},\qquad a^{(k)}=\tanh z^{(k)}\qquad(k=1,\dots,K), \\
+  y &= \Wout a^{(K)}+\bout \qquad(\text{出力層は }\tanh\text{ なし}).
+\end{align}
+
+\subsection{$x$ による微分}
+入力層の初期値：
+\begin{equation}
+  \dot a^{(0)}=1,\qquad \ddot a^{(0)}=0.
+\end{equation}
+線形の部分（$b$ は $x$ によらないので消える）：
+\begin{equation}
+  \dot z^{(k)}=W^{(k)}\dot a^{(k-1)},\qquad \ddot z^{(k)}=W^{(k)}\ddot a^{(k-1)}.
+\end{equation}
+$\tanh$ の部分（$s=\tanh'(z)$）：
+\begin{align}
+  s^{(k)} &= 1-\bigl(a^{(k)}\bigr)^2, \\
+  \dot a^{(k)} &= s^{(k)}\odot\dot z^{(k)}, \\
+  \ddot a^{(k)} &= s^{(k)}\odot\ddot z^{(k)}-2\,a^{(k)}\odot s^{(k)}\odot\bigl(\dot z^{(k)}\bigr)^2.
+\end{align}
+出力：
+\begin{equation}
+  \dot y=\Wout\dot a^{(K)},\qquad \ddot y=\Wout\ddot a^{(K)}.
+\end{equation}
+
+\subsection{$\ddot a$ の導出}
+\begin{align}
+  \dot a &= \frac{d}{dx}\tanh z=(1-\tanh^2 z)\,\dot z=s\,\dot z, \\
+  \dot s &= \frac{d}{dx}\bigl(1-a^2\bigr)=-2a\,\dot a=-2a\,s\,\dot z, \\
+  \ddot a &= \frac{d}{dx}\bigl(s\,\dot z\bigr)=\dot s\,\dot z+s\,\ddot z=s\,\ddot z-2a\,s\,\dot z^2.
+\end{align}
+
+%==================================================
+\section{損失（\code{pinn\_loss}）}
+
+選点を $x_i=x_{\mathrm{start}}+i\Delta\ (i=0,\dots,n-1)$ とする．初期条件は先頭の点 $x_0=0$ で課す．
+\begin{align}
+  r_i &= \ddot y_i+2\zeta\,\dot y_i+y_i, \\
+  L &= \frac{1}{n}\sum_{i=0}^{n-1}r_i^2
+       +\lambda\Bigl[\bigl(y_0-1\bigr)^2+\dot y_0^{\,2}\Bigr].
+\end{align}
+出力 $y,\dot y,\ddot y$ に対する勾配（$\delta_{i0}$ はクロネッカーのデルタ）：
+\begin{align}
+  \frac{\partial L}{\partial \ddot y_i} &= \frac{2r_i}{n}, \\
+  \frac{\partial L}{\partial \dot y_i}  &= 2\zeta\,\frac{2r_i}{n}+2\lambda\,\dot y_0\,\delta_{i0}, \\
+  \frac{\partial L}{\partial y_i}       &= \frac{2r_i}{n}+2\lambda\bigl(y_0-1\bigr)\delta_{i0}.
+\end{align}
+
+%==================================================
+\section{逆伝播（\code{nn\_backward\_d2}）}
+
+各層で $z,\dot z,\ddot z$ に対する勾配を出力側から順に求める．
+出力層ではこれが前節の3つの勾配になる．
+\begin{equation}
+  g^{(k)}=\frac{\partial L}{\partial z^{(k)}},\qquad
+  \dot g^{(k)}=\frac{\partial L}{\partial \dot z^{(k)}},\qquad
+  \ddot g^{(k)}=\frac{\partial L}{\partial \ddot z^{(k)}}.
+\end{equation}
+ここで $\dot g,\ddot g$ は「$\dot z,\ddot z$ に対する勾配」という名前であり，$g$ を $x$ で微分したものではない．
+
+\subsection{パラメータの勾配}
+$W$ は $z,\dot z,\ddot z$ のすべてに入っており，$b$ は $z$ にだけ入っている．
+\begin{align}
+  \frac{\partial L}{\partial W^{(k)}} &= \sum_{i}\Bigl(
+      g_i^{(k)}\,a_i^{(k-1)\top}
+     +\dot g_i^{(k)}\,\dot a_i^{(k-1)\top}
+     +\ddot g_i^{(k)}\,\ddot a_i^{(k-1)\top}\Bigr), \\
+  \frac{\partial L}{\partial b^{(k)}} &= \sum_i g_i^{(k)}.
+\end{align}
+入力層では $a^{(0)}=x,\ \dot a^{(0)}=1,\ \ddot a^{(0)}=0$ なので
+\begin{equation}
+  \frac{\partial L}{\partial W^{(1)}}=\sum_i\Bigl(g_i^{(1)}x_i+\dot g_i^{(1)}\Bigr).
+\end{equation}
+
+\subsection{1つ前の層へ渡す勾配}
+まず $W$ を逆にたどって，$a,\dot a,\ddot a$ に対する勾配にする．
+\begin{equation}
+  \gamma=W^{(k)\top}g^{(k)},\qquad
+  \dot\gamma=W^{(k)\top}\dot g^{(k)},\qquad
+  \ddot\gamma=W^{(k)\top}\ddot g^{(k)}.
+\end{equation}
+次に $\tanh$ の部分を逆にたどる（$a,s,\dot z,\ddot z$ はすべて第 $k-1$ 層の値）．
+\begin{align}
+  \ddot g^{(k-1)} &= s\odot\ddot\gamma, \\
+  \dot g^{(k-1)}  &= s\odot\dot\gamma-4\,a\odot s\odot\dot z\odot\ddot\gamma, \\
+  g^{(k-1)}       &= s\odot\gamma-2\,a\odot s\odot\dot z\odot\dot\gamma
+                     -\Bigl(2\,a\odot s\odot\ddot z+2\,s\odot\bigl(s-2a^2\bigr)\odot\dot z^{2}\Bigr)\odot\ddot\gamma.
+\end{align}
+
+\subsection{使った偏微分}
+3.2 節の $a,\dot a,\ddot a$ の式を $z,\dot z,\ddot z$ で偏微分したもの（$\partial s/\partial z=-2as$ を使う）．
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{cccc}
+\toprule
+ & $\partial/\partial z$ & $\partial/\partial \dot z$ & $\partial/\partial \ddot z$ \\
+\midrule
+$a$       & $s$ & $0$ & $0$ \\
+$\dot a$  & $-2as\,\dot z$ & $s$ & $0$ \\
+$\ddot a$ & $-2as\,\ddot z-2s(s-2a^2)\,\dot z^2$ & $-4as\,\dot z$ & $s$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+$\partial\ddot a/\partial z$ は $\dfrac{\partial}{\partial z}(as)=s\cdot s+a\cdot(-2as)=s(s-2a^2)$ から求まる．
+5.2 節の式は，この表の各列について $\gamma,\dot\gamma,\ddot\gamma$ との積和をとったものである．
+
+%==================================================
+\section{更新（\code{nn\_step}）}
+\begin{equation}
+  \theta\leftarrow\theta-\eta\,\frac{\partial L}{\partial\theta}\qquad(\theta\text{ はすべての }W,b).
+\end{equation}
+
+%==================================================
+\section{コードとの対応}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+数式 & コード & 場所 \\
+\midrule
+$a,\ \dot a,\ \ddot a$ & \code{H}, \code{H1}, \code{H2} & \code{NN} / \code{NNd2} \\
+$\dot z,\ \ddot z$ & \code{Z1}, \code{Z2} & \code{NNd2} \\
+$g,\ \dot g,\ \ddot g$ & \code{G}, \code{G1}, \code{G2} & \code{NN} / \code{NNd2} \\
+$s$ & \code{sd} & \code{layer\_forward\_d2}, \code{layer\_backward\_d2} \\
+$y,\ \dot y,\ \ddot y$ & \code{Y}, \code{Y1}, \code{Y2} & \code{pinn\_main.c} \\
+$\partial L/\partial y,\ \partial L/\partial\dot y,\ \partial L/\partial\ddot y$ & \code{dY}, \code{dY1}, \code{dY2} & \code{pinn\_main.c} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+コードでは選点 $n$ 個をまとめて行列で計算する．
+1行が1つの選点なので，$z=Wa+b$ は $Z=AW^{\top}+b$ の形になる．
+
+%==================================================
+\section{確認}
+
+$\dot y,\ddot y$ を $x$ の中心差分と，$\partial L/\partial\theta$ を全パラメータの中心差分と比べた
+（既定の 16 層 $\times$ 16 幅，パラメータ 4129 個）．
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+項目 & 差分近似との最大誤差 \\
+\midrule
+$\dot y$ & $4.6\times10^{-9}$ \\
+$\ddot y$ & $1.3\times10^{-7}$ \\
+$\partial L/\partial\theta$（絶対誤差） & $7.3\times10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}

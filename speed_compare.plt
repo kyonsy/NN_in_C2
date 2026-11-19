@@ -1,8 +1,8 @@
 # C 版と Python 版の学習時間のグラフを PNG で標準出力に書き出す
-# (speed_compare_epochs/width/depth.ps1 の結果で共通に使う)
+# (speed_compare_epochs/width/depth/samples.ps1 の結果で共通に使う)
 #   使い方: gnuplot -c speed_compare.plt 結果.csv 横軸の見出し > 画像.png   (speed_compare_all.ps1 から呼ぶ)
-#   例:     gnuplot -c speed_compare.plt speed_compare_width.csv "隠れ層の幅" > speed_compare_width.png
-#   結果.csv : 1行 = 変えた設定の値,C の秒数,Python の秒数,Python/C  (speed_compare_*.ps1 の出力)
+#   例:     gnuplot -c speed_compare.plt csv\speed_compare_width.csv "隠れ層の幅" > speed_compare_width.png
+#   結果.csv : 1行 = 変えた設定の値,C のミリ秒数,Python のミリ秒数,Python/C  (speed_compare_*.ps1 の出力)
 #   -c のあとに書いた引数は、このファイルの中で ARG1, ARG2 として使える(ARGC は引数の数)
 
 set encoding utf8             # このファイルは UTF-8(日本語の見出しを正しく表示するため)
@@ -14,10 +14,10 @@ xlabel = (ARGC >= 2) ? ARG2 : ""       # 横軸の見出し(省略したら見�
 
 set title  "学習時間の比較"
 set xlabel xlabel
-set ylabel "学習時間 [秒]"
-set yrange [0:*]              # 縦軸は 0 から
+set ylabel "学習時間 [ミリ秒]"
+set autoscale xfix            # 横軸は目盛りの切りのいい値まで広げず、データの範囲ぴったりにする
 set offsets graph 0.05, graph 0.05, 0, 0   # 左右に少し余白を空け、端の点と目盛りが枠に重ならないようにする
-set grid
+set grid xtics ytics          # 目盛りに補助線を引く
 set key left top
 
 plot file using 1:2 with linespoints linewidth 2 pointtype 7 pointsize 1.2 title "C", \

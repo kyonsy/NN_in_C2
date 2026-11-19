@@ -1,7 +1,7 @@
-﻿#Requires -Version 7
+#Requires -Version 7
 # エポック数を変えながら学習時間を測る
 #   幅 16、深さ 16、教師データ 1000 個に固定し、
-#   EPOCHS を 1000 から 2 倍ずつ増やして、学習時間が 60 秒以上になったら止める
+#   EPOCHS を 1000 から 2 倍ずつ増やして、学習時間が 60000 ミリ秒 (60 秒) 以上になったら止める
 #   使い方: .\c_epoch_time.ps1
 
 $fixed = @(
@@ -11,32 +11,39 @@ $fixed = @(
 )
 
 $epochs  = 2000     # 最初のエポック数
-$limit   = 60       # この秒数以上になったら止める
+$limit   = 60000    # このミリ秒数以上になったら止める
 $results = @()      # 結果(エポック数と学習時間)をためておく
 
 # 何回も使うファイル名
-$teach_data  = "teach_data.csv"       # 教師データ
-$init_weight = "initial_weight.csv"   # 初期の重み
+$teach_data  = "csv\teach_data.csv"       # 教師データ
+
+# 初期の重みと学習後の重みは、名前の後ろに 幅_深さ_教師データの数_エポック数 を付けて、上書きしないようにする
+. .\run_tag.ps1
 
 # 最後に必ず実行ファイルを消す
 # (途中でエラーの exit や Ctrl+C で止まったときも、finally の中は実行される)
 try {
     while ($true) {
         # この設定でビルドする(EPOCHS は -D で渡すので、変えるたびにビルドし直す)
-        .\c_build.ps1 @fixed "EPOCHS=$epochs"
+        $settings = $fixed + "EPOCHS=$epochs"
+        .\c_build.ps1 @settings
+
+        $tag         = Get-RunTag $settings
+        $init_weight = "csv\initial_weight_$tag.csv"     # 初期の重み
+        $c_weight    = "csv\trained_weight_${tag}_c.csv" # 学習後の重み
 
         # 教師データと初期の重みを作る
         .\make_teach_data.exe > $teach_data
         .\initial_random.exe > $init_weight
 
         # 学習して時間を測る
-        $time = Measure-Command { .\train_main.exe $teach_data $init_weight > c_trained_weight.csv }
-        $sec  = $time.TotalSeconds
-        Write-Host ("EPOCHS={0}  学習時間: {1:F2} 秒" -f $epochs, $sec)
+        $time = Measure-Command { .\train_main.exe $teach_data $init_weight > $c_weight }
+        $ms   = $time.TotalMilliseconds
+        Write-Host ("EPOCHS={0}  学習時間: {1:F0} ミリ秒" -f $epochs, $ms)
 
-        $results += [PSCustomObject]@{ EPOCHS = $epochs; 秒 = [math]::Round($sec, 2) }
+        $results += [PSCustomObject]@{ EPOCHS = $epochs; ミリ秒 = [math]::Round($ms) }
 
-        if ($sec -ge $limit) { break }
+        if ($ms -ge $limit) { break }
         $epochs += 2000
     }
 

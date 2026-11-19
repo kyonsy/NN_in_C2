@@ -46,4 +46,15 @@
 
 #define N_DISPLAY 1000
 
+// ---- 解く微分方程式(make_teach_data と pinn_main で共通) ----
+//   y'' + 2ζ y' + y = 0,  y(0) = 1,  y'(0) = 0
+//   (固有角周波数 ω は 1 に固定している。一般の y'' + 2ζω y' + ω² y = 0 で ω = 1 としたもの)
+//   (初期条件も y(0) = 1, y'(0) = 0 に固定している)
+#define ZETA   0.5    // 減衰比 ζ (0 < ζ < 1 で振動する)
+
+// ---- PINN ----
+#ifndef LAMBDA_IC
+#define LAMBDA_IC 1.0 // 損失のうち初期条件の項にかける重み
+#endif
+
 #endif

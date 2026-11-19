@@ -35,9 +35,30 @@ typedef struct {
     double G[N_HIDDEN][N_T][N_WIDTH];  // 隠れ層lの tanh をかける前の値に対する L の勾配
 } NN;
 
+// PINN 用の途中結果(nn_forward_d2 / nn_backward_d2 だけが使う)
+// 入力 x による1階微分 ' と2階微分 '' も一緒に流すための配列。
+//   z = tanh をかける前の値、 a = tanh(z)
+// a, x, z に対する勾配は NN の H, X, G をそのまま使い、ここには ' と '' の分だけを置く。
+// 普通の学習(train_main)では使わないので、NN とは別にして PINN のときだけ確保する。
+// これも大きいので static 変数として置くこと。
+typedef struct {
+    double X1[N_T][D_IN];               // x'  = 1
+    double X2[N_T][D_IN];               // x'' = 0
+    double H1[N_HIDDEN][N_T][N_WIDTH];  // a'
+    double H2[N_HIDDEN][N_T][N_WIDTH];  // a''
+    double Z1[N_HIDDEN][N_T][N_WIDTH];  // z'
+    double Z2[N_HIDDEN][N_T][N_WIDTH];  // z''
+    double G1[N_HIDDEN][N_T][N_WIDTH];  // L の z'  に対する勾配
+    double G2[N_HIDDEN][N_T][N_WIDTH];  // L の z'' に対する勾配
+} NNd2;
+
 void nn_init(NN *net);
 void nn_forward(NN *net,int n,double X[][D_IN],double Y[][D_OUT]);
 void nn_backward(NN *net,int n,double dY[][D_OUT]);
+void nn_forward_d2(NN *net,NNd2 *d,int n,double X[][D_IN],
+                   double Y[][D_OUT],double Y1[][D_OUT],double Y2[][D_OUT]);
+void nn_backward_d2(NN *net,NNd2 *d,int n,
+                    double dY[][D_OUT],double dY1[][D_OUT],double dY2[][D_OUT]);
 void nn_step(NN *net,double lr);
 void nn_print(const NN *net);
 void nn_load(NN *net,const char *path);
